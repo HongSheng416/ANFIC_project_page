@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+<meta http-equiv="content-type" content="text/html; charset=UTF-8">
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>ANFIC: Image Compression Using Augmented Normalizing Flows</title>
+    <script type="text/javascript" src="assets/latexit.js"></script>
+    <script type="text/javascript">
+      
+    LatexIT.add('p',true);
+    </script>
+
+    <!-- CSS includes -->
+    <link href="assets/bootstrap.css" rel="stylesheet">
+    <link href="assets/css.css" rel="stylesheet" type="text/css">
+    <link href="assets/mystyle.css" rel="stylesheet">
+    <link href="assets/lightbox2-2.11.3/dist/css/lightbox.css" rel="stylesheet" />
+
+  </head>
+  <body>
+    <script type="text/javascript" src="path-to-MathJax/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
+    <div id="header" class="container-fluid">
+      <div class="row">
+        <h1>ANFIC: Image Compression Using Augmented Normalizing Flows</h1>
+        <div class="authors">
+          Yung-Han Ho, Chih-Chun Chan, Wen-Hsiao Peng, Hsueh-Ming Hang, Marek Doma ́nski
+        </div>
+      </div>
+    
+      <p style="text-align:center;">
+              <a href="https://en.nycu.edu.tw/" target="_blank"><img src="assets/210204-NYCU (1).png" height="80"></a>
+               
+              <a href="http://mapl.nctu.edu.tw/" target="_blank"><img src="assets/mapl_logo.png"  height="100"></a>
+      </p>
+    </div>
+    <div class="container" id="abstractdiv">
+      <h2>Abstract</h2>
+      This paper introduces an end-to-end learned image compression system, termed ANFIC, based on Augmented Normalizing Flows
+      (ANF). ANF is a new type of flow model, which stacks multiple variational autoencoders (VAE) for greater model expressiveness.
+      The VAE-based image compression has gone mainstream, showing promising compression performance. Our work presents the
+      first attempt to leverage VAE-based compression in a flow-based framework. ANFIC advances further compression efficiency by
+      stacking and extending hierarchically multiple VAE’s. The invertibility of ANF, together with our training strategies, enables ANFIC
+      to support a wide range of quality levels without changing the encoding and decoding networks. Extensive experimental results
+      show that in terms of PSNR-RGB, ANFIC performs comparably to or better than the state-of-the-art learned image compression.
+      Moreover, it performs close to VVC intra coding, from low-rate compression up to perceptually lossless compression. In particular,
+      ANFIC achieves the state-of-the-art performance, when extended with conditional convolution for variable rate compression with a
+      single model. The source code of ANFIC can be found at <a href="https://github.com/dororojames/ANFIC">https://github.com/dororojames/ANFIC</a>.
+    </div>
+
+    <div class="container" id="banner">
+      <h2>Augmented Normalizing Flows (ANF)</h2>
+      <div id="overview">
+        <div align="center">
+          <p style="text-align:center;">
+            <a href="assets/anf/ourANF.png" data-lightbox="Exp1"><img src="assets/anf/ourANF.png" width="30%"></a> 
+            <br>
+            <caption>(a) augmented normalizing flows </caption>
+          </p>
+        </div>
+      <p style="text-align:left;">
+        The ANF model s an invertible latent variable model. It is composed of multiple autoencoding transforms, each of which comprises a pair of the encoding and decoding
+        transforms as depicted in Fig.(a). Consider the example of ANF with one autoencoding transform (i.e. one-step ANF). It converts the input $x$ coupled with an independent 
+        noise $e$ into their latent representation $(y, z)$ with one pair of encoding and decoding transforms:
+        <p style="text-align:center;">
+        $g_\pi^{enc} (x, e) = (x, s^{enc}_\pi(x) \odot e + m^{enc}_\pi (x)) = (x, z)$ <br>
+        $g_\pi^{dec} (x, z) = (x - \mu_\pi^{dec}(z) / \sigma^{dec}_\pi(z), z) = (y, z)$
+        </p>
+        <p style="text-align:left;">
+        where $s^{enc}_\pi, m^{enc}_\pi, \mu^{enc}_\pi,$ and $\sigma^{enc}_\pi$ are element-wise affine transformation parameters. These learnable parameters are
+        driven by the encoding and decoding neural networks, the weights of which are referred collectively to as $\pi$. Compared with ordinary flow models, ANF augments 
+        the input with an independent noise. It has been shown that he augmented input space allows a smoother transformation to the required latent space.
+        </p>
+      </p>
+      </div>
+      </div>
+
+    <div class="container" id="banner">
+    <h2>Overall Architecture</h2>
+    <div id="overview" align="center">
+      <div class="col-md-6">
+        <p style="text-align:center;">
+          <a href="assets/architecture/overall.png" data-lightbox="Exp1"><img src="assets/architecture/overall.png" width="78%"></a>
+          <br>
+          <caption>(b)</caption>
+        </p>
+      </div>
+      <div class="col-md-6">
+        <p style="text-align:center;">
+          <a href="assets/architecture/error.png" data-lightbox="Exp1"><img src="assets/architecture/error.png"  width="70.5%"></a>
+          
+          <br><caption>(c)</caption>
+        </p>
+      </div>
+      <p style="text-align:left;">(b) The proposed ANF-based image compression (ANFIC). (c) Error propagation due to the quantization of the image latents $x_2, z_2$. 
+                                      To alleviate propagation errors, we place a quality enhancement (QE) network at the end of the reverse path (the red dotted line).</p>
+    </div>
+    </div>
+
+    <div class="container" id="method">
+    <h2>System overview</h2>
+    <p style="text-align:left;">
+    Fig. (b) describes the framework of ANFIC. From bottom to top, it stacks two autoencoding transforms (i.e. two-step ANF), with the top one extended further to the right to form
+    a hierarchical ANF that implements the hyperprior. More autoencoding transforms can be added straightforwardly to create a multi-step ANF. In particular, the $g^{enc}_\pi$ and $g^{dec}_\pi$ 
+    in the autocoding transforms follow the following equation. 
+    </p>
+    
+    <p style="text-align:center">
+    $g^{enc}_\pi(x, e) = (x, s^{enc}_\pi(x) + m^{enc}_\pi (x)) = (x, z)$ <br>
+    $g^{dec}_\pi(x, z) = (x - \mu^{dec}_\pi(z), z) = (y, z)$ <br>
+    </p>
+
+    <p>
+    We make them purely additive by removing $s^{enc}(x)$ and $\sigma^{dec}_\pi$ for better convergence as some other flow-based schemes. The autoencoding transform 
+    of the hyperprior, which assume each sample in the latent representation $z_2$ is a Gaussian, is defined as<br>
+    </p>
+
+    <p style="text-align:center">
+    $h^{enc}_\pi (z_2, e_h) = (z_2, e_h + m^{enc}_{\pi_3}(z_2)) = (z_2, \hat{h}_2)$ <br>
+    $h^{dec}_\pi (z_2, \hat{h}_2) = (\lfloor z_2 - \mu^{dec}_{\pi_3}(\hat{h}_2) \rceil, \hat{h}_2) = (\hat{z}_2, \hat{h}_2)$
+    </p>
+
+    <p style="text-align:left">
+    where $\lfloor \rceil$ (depicted as Q in Fig. (b)) denotes the nearest-integer rounding for quantizing the residual between $z_2$ and the predicted mean $\mu^{dec}_{\pi_3}(\hat{h}_2)$
+    of the Gaussian distribution from the hyperprior $\hat{h}_2$. This part implements the autoregressive hyperprior, with $z_2$ denoting the image latents whose distributions are signaled 
+    as the side information $\hat{h}_2$.
+    </p>
+
+    <p style="text-align:left"> 
+    The encoding of ANFIC proceeds by passing the augmented input $(x, e_z, e_h)$ through the autoencoding and hyperprior transforms, i.e. 
+    $G_\pi = g^{dec}_{\pi_2} \circ h^{dec}_{\pi_3} \circ h^{enc}_{\pi_3} \circ g^{enc}_{\pi_2} \circ g^{dec}_{\pi_1} \circ g^{enc}_{\pi_1}$
+    to obtain the latent representation $(x_2, \hat{z}_2, \hat{h}_2)$. In particular, $x$ represents the input image, $e_z = 0$ denotes the 
+    augmented input, and $e_h \sim U(-0.5, 0.5)$, another augmented input, simulates the additive quantization noise of the hyperprior
+    during training. To achieve lossy compression, we want $\hat{z}_2$ and $\hat{h}_2$ to capture most of the information about the input $x$
+    and regularize $x_2$ during training to approximate noughts. As such, only $\hat{z}_2$ and $\hat{h}_2$ are entropy coded into bitstreams.
+    </p>
+
+    <p style="text-align:left"> 
+    To decode the input $x$, we apply the inverse mapping function $G_\pi^{-1]$ to the quantized latents $(0, \hat{z}_2, \hat{h}_2)$, where $x_2$ is set 
+    to  noughts. In ANFIC, there are two sources of distortion that cause the reconstruction to be lossy: the quantization error of $z_2$ and the error of setting $x_2$
+    to noughts during the inverse operation. Essentially, ANFIC is an ANF model, which is bijective and invertible. The errors between the encoding latents $(x_2, z_2)$
+    and their quantized version $(0, \hat{z}_2)$ will introduce distortion to the reconstructed image, as shown in Fig. (c). To mitigate the effect of quantization errors 
+    on the decoded image quality, we incorporate a quality enhancement (QE) network at the end of the reverse path, as illustrated in Fig. (c).
+    </p>
+    
+  </div>
+
+  <div class="container" id="exp_results">
+    <h2>Paper</h2>
+    <a href="assets/paper.pdf"
+        download="ANFIC:Image Compression Using Augmented Normalizing Flows.pdf">
+      <div class="thumbs">
+      <img src="assets/paper/paper_page-0001.jpg" width="19%">
+      <img src="assets/paper/paper_page-0002.jpg" width="19%">
+      <img src="assets/paper/paper_page-0003.jpg" width="19%">
+      <img src="assets/paper/paper_page-0004.jpg" width="19%">
+      <img src="assets/paper/paper_page-0005.jpg" width="19%">
+      <img src="assets/paper/paper_page-0006.jpg" width="19%">
+      <img src="assets/paper/paper_page-0007.jpg" width="19%">
+      <img src="assets/paper/paper_page-0008.jpg" width="19%">
+      <img src="assets/paper/paper_page-0009.jpg" width="19%">
+      <img src="assets/paper/paper_page-0010.jpg" width="19%">
+      <img src="assets/paper/paper_page-0011.jpg" width="19%">
+      <img src="assets/paper/paper_page-0012.jpg" width="19%">
+      <img src="assets/paper/paper_page-0013.jpg" width="19%">
+      </div>
+    </a>  
+    
+    </div>
+
+    <div class="container" id="exp_results">
+    <h2>Subjective Quality Comparison</h2>
+    <p>
+      The reconstruction quality on image selected from Kodak dataset. <br>
+      <b>Click on image to enlarge it. </b>
+    </p>
+    
+    
+    <div width="100%">
+      <p style="text-align:center;">
+        <a href="assets/comparison/SubjectiveQuality.jpg" data-lightbox="Exp1"><img src="assets/comparison/SubjectiveQuality.jpg" width="78%"></a>
+      </p>
+      <p style="text-align:center;">
+        <a href="assets/comparison/SubjectiveQuality3.jpg" data-lightbox="Exp1"><img src="assets/comparison/SubjectiveQuality3.jpg" width="78%"></a>
+      </p>
+      <p style="text-align:center;">
+        <a href="assets/comparison/SubjectiveQuality6.jpg" data-lightbox="Exp1"><img src="assets/comparison/SubjectiveQuality6.jpg" width="78%"></a>
+      </p>
+    </div>
+
+    <div id=footer><br></div>
+    <!-- Javascript includes -->
+    <script src="assets/jquery-1.js"></script>
+    <script src="assets/bootstrap.js"></script>
+    <script src="assets/lightbox2-2.11.3/dist/js/lightbox.js"></script>
+  
+
+</body></html>
